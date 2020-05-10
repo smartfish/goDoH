@@ -27,6 +27,11 @@ func NewQuad9DNS() *Quad9DNS {
 	return &Quad9DNS{BaseURL: "https://dns10.quad9.net/dns-query"}
 }
 
+// NewUrlDNS starts a new url DNS-over-HTTPS resolver Client
+func NewUrlDNS(url string) *UrlDNS {
+	return &UrlDNS{BaseURL: url}
+}
+
 // NewRawDNS starts a new client making use of traditional DNS
 func NewRawDNS() *RawDNS {
 	return &RawDNS{}

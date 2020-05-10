@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -50,6 +51,8 @@ func Execute() {
 }
 
 func init() {
+	log.Info("change crypt key for cirrusgate test")
+
 	cobra.OnInitialize(validateDNSProvider)
 	cobra.OnInitialize(validateDNSDomain)
 	cobra.OnInitialize(seedRand)
@@ -104,6 +107,10 @@ func validateDNSProvider() {
 		dnsProvider = dnsclient.NewRawDNS()
 		break
 	default:
+		if strings.HasPrefix(dnsProviderName, "https://") {
+			dnsProvider = dnsclient.NewUrlDNS(dnsProviderName)
+			break
+		}
 		log.Fatalf("DNS provider `%s` is not valid.\n", dnsProviderName)
 	}
 
@@ -111,7 +118,20 @@ func validateDNSProvider() {
 }
 
 func configureSSLValidation() {
+	path := os.Getenv("SSLKEYLOGFILE")
+	var writer io.Writer
+	if len(path) > 0 {
+		writer, _ = os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	}
+
 	if !validateSSL {
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+			KeyLogWriter:       writer,
+		}
+	} else {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+			KeyLogWriter: writer,
+		}
 	}
 }
